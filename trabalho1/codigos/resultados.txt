@@ -1,0 +1,11 @@
+Este arquivo possui a funçÃo de registrar os resultados de tempo para cada uma das 
+seguindo o seu pior caso.
+tempo médio de 100 operações
+
+1. Inversão da ordem do vetor de entrada.
+pior caso: vetor ordenado
+ entrada | tempo      , operações
+ 10      | 0.000000382, 10
+ 100     | 0.000000696, 100
+ 1000    | 0.000003699, 1000
+ 5000    | 0.000019061, 5000
