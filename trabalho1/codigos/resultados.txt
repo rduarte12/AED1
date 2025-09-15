@@ -9,3 +9,13 @@ pior caso: vetor ordenado
  100     | 0.000000285, 100
  1000    | 0.000002017, 1000
  5000    | 0.000009968, 5000
+
+
+2. Busca Sequencial no vetor de entrada.
+pior caso: o numero buscado não esta no vetor
+
+ entrada | tempo      , operações
+ 10      | 0.000000027, 10
+ 100     | 0.000000259, 100
+ 1000    | 0.000002088, 1000
+ 5000    | 0.000010248, 5000
