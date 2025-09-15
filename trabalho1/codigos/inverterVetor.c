@@ -84,7 +84,7 @@ int main () {
     }
     QueryPerformanceCounter(&start);
 
-    for(int i = 0; i < 100; i++) {
+    for(int i = 0; i < 100000; i++) {
         int *invertedVector = invertVector(vector, n, &operationsCounter);
         if (invertedVector == NULL) {
             printf("Erro ao alocar memoria para o vetor invertido.\n");
@@ -98,7 +98,7 @@ int main () {
 
     // Medir o tempo de execução da função em inteiros
     double elapsedTime = (double)(end.QuadPart - start.QuadPart)/freq.QuadPart;
-    printf("%0.9lf,%d\n", elapsedTime/100, operationsCounter/100); // Tempo médio por execução
+    printf("%0.9lf,%d\n", elapsedTime/100000, operationsCounter/100000); // Tempo médio por execução
 
     // Liberar a memória alocada
     freeVector(vector);
