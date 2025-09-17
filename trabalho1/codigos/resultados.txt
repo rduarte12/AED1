@@ -6,16 +6,46 @@ tempo médio de 100000 operações
 pior caso: vetor ordenado
  entrada | tempo      , operações
  10      | 0.000000077, 10
+ 50      | 0.000000142, 50
  100     | 0.000000285, 100
+ 500     | 0.000000976, 500
  1000    | 0.000002017, 1000
  5000    | 0.000009968, 5000
-
+ 10000   | 0.000018372, 10000
 
 2. Busca Sequencial no vetor de entrada.
 pior caso: o numero buscado não esta no vetor
 
  entrada | tempo      , operações
  10      | 0.000000027, 10
+ 50      | 0.000000118, 50
  100     | 0.000000259, 100
+ 500     | 0.000000962, 500
  1000    | 0.000002088, 1000
  5000    | 0.000010248, 5000
+ 10000   | 0.000018781, 10000
+
+3. Busca Binária Iterativa
+pior caso: o numero busca não esta no vetor
+
+ entrada | tempo      , operações
+ 10      | 0.000000013, 10
+ 50      | 0.000000020, 50
+ 100     | 0.000000025, 100
+ 500     | 0.000000033, 500
+ 1000    | 0.000000036, 1000
+ 5000    | 0.000000051, 5000
+ 10000   | 0.000000052, 10000
+
+4. Busca Binária Recursiva
+pior caso: o numero buscado não esta no vetor
+
+ entrada | tempo      , operações
+ 10      | 0.000000010, 10  
+ 50      | 0.000000015, 50  
+ 100     | 0.000000019, 100  
+ 500     | 0.000000024, 500  
+ 1000    | 0.000000035, 1000  
+ 5000    | 0.000000050, 5000  
+ 10000   | 0.000000053, 10000  
+
