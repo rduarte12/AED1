@@ -1,0 +1,70 @@
+#include "Queue.h"
+#include <stdio.h>
+#include <stdlib.h>
+int tentarRemover(Queue *q1, Queue *q2, int *value) {
+    if (dequeue(q1, value)) {
+        return 1;
+    } else if (dequeue(q2, value)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int main() {
+    Queue *q1 = create_queue();
+    Queue *q2 = create_queue();
+
+    int run = 1;
+    while (run) {
+        int opt;
+        scanf("%d", &opt);
+        switch (opt) {
+
+            case 0: {
+                run = 0;
+                break;
+            }
+
+            case 1: {
+                int value;
+                scanf("%d", &value);
+                enqueue(q1, value);
+                break;
+            }
+
+            case 2: {
+                int value;
+                scanf("%d", &value);
+                enqueue(q2, value);
+                break;
+            }
+
+            case 3: {
+                
+                int value;
+                int verify = 1;
+                while (verify) {
+                    verify = tentarRemover(q2, q1, &value);
+                    if (verify) {
+                        printf("%d\n", value);
+                    }
+
+                    verify = tentarRemover(q2, q1, &value);
+                    if (verify) {
+                        printf("%d\n", value);
+                    }
+
+                    verify = tentarRemover(q1, q2, &value);
+                    if (verify) {
+                        printf("%d\n", value);
+                    }
+                }
+                break;
+
+            }
+
+
+        }
+    }
+}
