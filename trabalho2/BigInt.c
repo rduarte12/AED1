@@ -17,13 +17,13 @@
     - void printBigInt(const BigInt* bigInt): Imprime o BigInt na saída padrão.
     - BigInt* addBigInt(const BigInt* a, const BigInt* b): Soma dois BigInts e retorna o resultado.
     - BigInt* subtractBigInt(const BigInt* a, const BigInt* b): Subtrai dois BigInts e retorna o resultado.
-    - BigInt* isGreaterThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for maior que 'b'.
-    - BigInt* isEqualTo(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se forem iguais.
-    - BigInt* isLessThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for menor que 'b'.
+    - int* isGreaterThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for maior que 'b'.
+    - int* isEqualTo(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se forem iguais.
+    - int* isLessThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for menor que 'b'.
     - void printBigInt(const BigInt* bigInt): Imprime o BigInt na saída padrão.
 
     Funções Auxiliares:
-    - Node* createNode(char unidade, char dezena, char centena, char sinal);
+    - Node* createNode(char unidade, char dezena, char centena, char sinal, int numDigitos);
     - int is_empty_BigInt(const BigInt *BigInt);
     - int insertNode(BigInt *bigInt, char unidade, char dezena, char centena, char sinal, int numDigitos);
 
@@ -130,16 +130,6 @@ int insertNode(BigInt *bigInt, char unidade, char dezena, char centena, char sin
     return 1; // Sucesso
 }
 
-
-/*
-    TODO para converter string para BigInt:
-    1. Verificar o sinal do número (primeiro caractere da string).
-    2. Eliminar zeros à esquerda.
-    3. Contar o número de dígitos na string.
-    4. Alocar memória para o BigInt com base no número de dígitos.
-    5. separar os dígitos em grupos de três (centena, dezena, unidade) e armazená-los nos nós da lista encadeada.
-    6. Retornar o BigInt criado.
-*/
 // Função para liberar a memória alocada para um BigInt
 
 void freeBigInt(BigInt* bigInt) {
@@ -159,6 +149,90 @@ void freeBigInt(BigInt* bigInt) {
     free(bigInt);
 }
 
+// função para remover zeros à esquerda de uma string
+char *removeZeros(char *str) {
+    int i = 0, j = 0;
+    int sinal_presente = 0;
+
+    // Verificar se o primeiro caractere é sinal
+    if (str[0] == '+' || str[0] == '-') {
+        sinal_presente = 1;
+        i = 1; // início da análise após o sinal
+    }
+
+    // Avançar o índice i enquanto encontrar zeros após o sinal
+    while (str[i] == '0') {
+        i++;
+    }
+
+    // Se todos os caracteres forem zeros
+    if (str[i] == '\0') {
+        // String será somente "0", preservando sinal se tiver
+        if (sinal_presente) {
+            str[1] = '0';
+            str[2] = '\0';
+            str[0] = str[0];  // sinal mantido
+        } else {
+            str[0] = '0';
+            str[1] = '\0';
+        }
+        return str;
+    }
+
+    // Se tem sinal, manter no começo
+    if (sinal_presente) {
+        str[0] = str[0]; // sinal já está no lugar, só copiar depois
+        j = 1; // índice de destino após o sinal
+    } else {
+        j = 0; // índice de destino do começo
+    }
+
+    // Copiar os caracteres restantes para frente na string
+    while (str[i] != '\0') {
+        str[j++] = str[i++];
+    }
+    str[j] = '\0';
+
+    return str;
+}
+
+// função recursiva que percorre a lista comparando os elementos de cada nó
+// no jeito de verificar se 'a' é maior que 'b' (ambos positivos)
+// se inverter a saída, verifico se a é menor que b
+int isThan_rec(const Node *a, const Node *b) {
+    if (a == NULL || b == NULL) return 0; //Caso base
+
+    if (a->centena != b->centena ||
+        a->dezena != b->dezena ||
+        a->unidade != b->unidade) {
+
+        if(a->centena > b->centena) {
+            return 1;
+        } else if (a->centena < b->centena) {
+            return 0;
+        } else if (a->dezena > b->dezena) {
+            return 1;
+        } else if (a->dezena < b->dezena) {
+            return 0;
+        } else if (a->unidade > b->unidade) {
+            return 1;
+        } else if (a->unidade < b->unidade) {
+            return 0;
+        }
+    }
+
+    return isThan_rec(a->next, b->next);
+}
+/*
+    TODO para converter string para BigInt:
+    1. Verificar o sinal do número (primeiro caractere da string).
+    2. Eliminar zeros à esquerda.
+    3. Contar o número de dígitos na string.
+    4. Alocar memória para o BigInt com base no número de dígitos.
+    5. separar os dígitos em grupos de três (centena, dezena, unidade) e armazená-los nos nós da lista encadeada.
+    6. Retornar o BigInt criado.
+*/
+
 // Função para criar um BigInt a partir de uma string
 /*
     TODO:
@@ -169,17 +243,22 @@ void freeBigInt(BigInt* bigInt) {
     5- Preencher o BigInt com os dígitos da string.
     6- Retornar o BigInt criado.
 */
-BigInt* createBigInt(const char* str) {
+BigInt* createBigInt(char* str1) {
 
     // Verificar se a string é nula ou vazia
-    if (str == NULL || strlen(str) == 0) {
+    if (str1 == NULL || strlen(str1) == 0) {
         return NULL;
     }
 
-    // Ignorar zeros à esquerda
-    while (*str == '0' && *(str + 1) != '\0' && *(str + 1) != '-' && *(str + 1) != '+' && *(str + 1) >= '0' && *(str + 1) <= '9') {
-        str++;
+    // Criar uma cópia da string para manipulação
+    char* str = (char*)malloc((strlen(str1) + 1) * sizeof(char));
+    if (str == NULL) {
+        return NULL; // Falha na alocação de memória
     }
+    strcpy(str, str1);
+
+    // Ignorar zeros à esquerda
+    str = removeZeros(str);
 
     // verificar o tamanho da string e quantidade de dígitos
     int len = strlen(str);
@@ -261,9 +340,47 @@ BigInt* createBigInt(const char* str) {
         b) Se iguais, comparar dígito a dígito do mais significativo para o menos significativo.
 
     4- Retornar verdadeiro se 'a' for maior que 'b', falso caso contrário.
+
+    Retorno:
+    - 1 se 'a' for maior que 'b'
+    - 0 se 'a' não for maior que 'b'
+    - -1 em caso de erro (BigInt nulo)
 */
+int isGreaterThan(const BigInt* a, const BigInt* b) {
+    if (a == NULL || b == NULL) return -1; // Indica erro por BigInt nulo
 
+    char sinalA = a->end->sinal;
+    char sinalB = b->end->sinal;
 
+    if (sinalA != sinalB) {
+        return (sinalA == '+') ? 1 : 0; // '+' é maior que '-'
+
+    } else { // mesmo sinal
+        if (a->size != b->size) {
+            if(sinalA == '+') {
+                return (a->size > b->size) ? 1 : 0; // maior tamanho é maior
+            } else {
+                return (a->size < b->size) ? 1 : 0; // menor tamanho é maior (negativo)
+            }
+
+        } else { // mesmo tamanho, comparar digito a digito a partir do mais significativo
+            Node *currentA = a->end;
+            Node *currentB = b->end;
+
+            if (currentA == NULL || currentB == NULL) return -1;
+
+            if (sinalA == '+') {
+                int res = isThan_rec(currentA, currentB);
+                return res;
+            } else {
+                int res = isThan_rec(currentA, currentB);
+                return (res == 1) ? 0 : 1; //iversão da lógica para numero negativo
+            }
+        }
+    }
+
+    return 0; 
+}
 
 // Função is less than
 /*
@@ -278,6 +395,41 @@ BigInt* createBigInt(const char* str) {
     
     4- Retornar verdadeiro se 'a' for menor que 'b', falso caso contrário.
 */
+int isLessThan(const BigInt* a, const BigInt* b) {
+    if (a == NULL || b == NULL) return -1; // Indica erro por BigInt nulo
+
+    char sinalA = a->end->sinal;
+    char sinalB = b->end->sinal;
+
+    if (sinalA != sinalB) {
+        return (sinalA == '-') ? 1 : 0; // '-' é menor que '+'
+
+    } else { // mesmo sinal
+        if (a->size != b->size) {
+            if(sinalA == '+') {
+                return (a->size < b->size) ? 1 : 0; // menor tamanho é menor
+            } else {
+                return (a->size > b->size) ? 1 : 0; // maior tamanho é menor (negativo)
+            }
+
+        } else { // mesmo tamanho, comparar digito a digito a partir do mais significativo
+            Node *currentA = a->end;
+            Node *currentB = b->end;
+
+            if (currentA == NULL || currentB == NULL) return -1;
+
+            if (sinalA == '+') {
+                int res = isThan_rec(currentA, currentB);
+                return (res == 1) ? 0 : 1; // inversão da lógica para "menor que"
+            } else {
+                int res = isThan_rec(currentA, currentB);
+                return res; // mantém a lógica para número negativo
+            }
+        }
+    }
+
+    return 0; 
+}
 
 
 // Função is equal to
@@ -294,6 +446,40 @@ BigInt* createBigInt(const char* str) {
     4- Retornar verdadeiro se 'a' for igual a 'b', falso caso contrário.
 */
 
+int isEqualTo(const BigInt* a, const BigInt* b) {
+    if (a == NULL || b == NULL) return -1; // Indica erro por BigInt nulo
+
+    char sinalA = a->end->sinal;
+    char sinalB = b->end->sinal;
+
+    if (sinalA != sinalB) {
+        return 0; // sinais diferentes, não são iguais
+
+    } else { // mesmo sinal
+        if (a->size != b->size) {
+            return 0; // tamanhos diferentes, não são iguais
+
+        } else { // mesmo tamanho, comparar digito a digito a partir do mais significativo
+            Node *currentA = a->end;
+            Node *currentB = b->end;
+
+            while (currentA != NULL && currentB != NULL) {
+                if (currentA->centena != currentB->centena ||
+                    currentA->dezena != currentB->dezena ||
+                    currentA->unidade != currentB->unidade) {
+                    return 0; // dígitos diferentes, não são iguais
+                }
+                currentA = currentA->prev;
+                currentB = currentB->prev;
+            }
+
+            return 1; // todos os dígitos são iguais
+        }
+    }
+
+    return 0; 
+}
+
 
 
 
@@ -307,8 +493,18 @@ BigInt* createBigInt(const char* str) {
     5- Se os sinais forem diferentes, subtrair o menor do maior e definir o sinal do maior.
     6- Retornar o BigInt resultante.
 
-    Importante: Levar em consideração o carry
+    Importante: Levar em consideração o carry 
 */
+BigInt* addBigInt(const BigInt* a, const BigInt* b) {
+    if (a == NULL || b == NULL) return NULL;
+    char sinalA = a->end->sinal;
+    char sinalB = b->end->sinal;
+
+    
+
+
+    return NULL; // Placeholder
+}
 
 
 // Função para subtrair big ints
@@ -320,7 +516,13 @@ BigInt* createBigInt(const char* str) {
     4- Se os sinais forem diferentes, somar os dois bigInts e manter o sinal do minuendo.
     5- Se os sinais forem iguais, subtrair o menor do maior e definir o sinal do maior.
     6- Retornar o BigInt resultante.
+
+    Importante: Levar em consideração o carry
 */
+BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
+    // Implementação da função de subtração de BigInts
+    return NULL; // Placeholder
+}
 
 // Função para imprimir 
 /*
@@ -363,7 +565,8 @@ void printBigInt(const BigInt* bigInt) {
 // testar funções 
 int main() {
     BigInt* bigInt1 = createBigInt("-123456789");
-    BigInt* bigInt2 = createBigInt("00098765432100000000000000");
+    BigInt* bigInt2 = createBigInt("-00098765432100000000000000");
+    BigInt* bigInt3 = createBigInt("-123456789");
 
     printf("BigInt 1: ");
     printBigInt(bigInt1);
@@ -372,6 +575,14 @@ int main() {
     printf("BigInt 2: ");
     printBigInt(bigInt2);
     printf("\n");
+
+    printf("Comparacao:\n");
+    int gt = isGreaterThan(bigInt1, bigInt2);
+    printf("bigInt1 > bigInt2? %s\n", gt ? "Sim" : "Nao");
+    int lt = isLessThan(bigInt1, bigInt2);
+    printf("bigInt1 < bigInt2? %s\n", lt ? "Sim" : "Nao");
+    int eq = isEqualTo(bigInt1, bigInt3);
+    printf("bigInt1 == bigInt3? %s\n", eq ? "Sim" : "Nao");
 
     // Liberar memória
     freeBigInt(bigInt1);
