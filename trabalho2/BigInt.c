@@ -626,7 +626,7 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
 */
 
 // Função auxiliar para subtração quando 'maior' > 'menor' 
-BigInt*subtract_aux(const BigInt* maior, const BigInt* menor) {
+BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
     BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
     if(!resultado) return NULL;
     resultado->start = NULL;
@@ -641,7 +641,22 @@ BigInt*subtract_aux(const BigInt* maior, const BigInt* menor) {
     int i = 0;
 
     while(i < maxTamanho) {
-        
+        int subUnidade = 0;
+        int subDezena = 0;
+        int subCentena = 0;
+
+        // Definir numDigitos do nó resultado com base nos nós do maior big int
+        int numDigitosRes = 0;
+        if (currentMaior != NULL) {
+            numDigitosRes = currentMaior->numDigitos;
+        }
+
+        // Subtrair unidade
+
+
+
+
+
     }
 
     return resultado;
@@ -665,10 +680,14 @@ BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
         if (isGreaterThan(a, b) == 1) {
             // a > b
 
+            BigInt* resultado = subtract_aux(a, b);
+            return resultado;
 
         } else if (isLessThan(a, b) == 1) {
             // a < b
 
+            BigInt* resultado = subtract_aux(b, a);
+            return resultado;
 
         } else {
             // a == b
