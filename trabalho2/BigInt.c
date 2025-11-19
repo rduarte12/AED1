@@ -451,14 +451,14 @@ int isEqualTo(const BigInt* a, const BigInt* b) {
     2- Verificar os sinais dos dois bigInts.
     3- Verificar o tamanho dos dois bigInts.
     4- Se os sinais forem iguais, somar os dois bigInts e manter o sinal.
+        - verificar o tamanho dos dois BigInts para definir o loop
+        - Definir o sinal do BigInt resultante.
         a) Acessar primeiro nó de cada BigInt (menos significativo).
         b) Somar os dígitos correspondentes, levando em consideração o carry.
+            carry = {se soma >= 10, carry = 1 e soma -= 10; senão carry = 0}
         c) Criar um novo nó com o resultado da soma e inserir no BigInt resultante.
         d) Repetir até que todos os nós tenham sido processados.
         e) Se houver carry restante, criar um novo nó para ele.
-        f) Definir o sinal do BigInt resultante.
-        g) Retornar o BigInt resultante.
-        h) carry = {se soma >= 10, carry = 1 e soma -= 10; senão carry = 0}
     5- Se os sinais forem diferentes, subtrair o menor do maior e definir o sinal do maior.
     6- Retornar o BigInt resultante.
 
@@ -480,10 +480,119 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
     if (!resultado) {
         return NULL; // Falha na alocação de memória
     }
-
+    resultado->start = NULL;
+    resultado->end = NULL;
+    resultado->size = 0;
+    resultado->sinal = '+'; // valor temporário
+    
     // se sinais iguais, somar e manter o sinal do maior
     if (sinalA == sinalB) {
-        // Implementação futura
+        
+        // - verificar tamanohos para definir loop (até qual digito vai somar + carry)
+        int maxTamanho = (tamanhoA > tamanhoB) ? tamanhoA : tamanhoB;
+
+        //- Definir o sinal do BigInt resultante.
+        resultado->sinal = sinalA; // mesmo sinal dos dois
+
+        //a) Acessar primeiro nó de cada BigInt (menos significativo).
+        Node* currentA = a->start;
+        Node* currentB = b->start;
+
+        if (currentA == NULL && currentB == NULL) {
+            freeBigInt(resultado);
+            return NULL; // Ambos BigInts vazios
+        }
+
+        int carry = 0;
+
+        // Loop para somar os dígitos
+        int i = 0;
+        while (i < maxTamanho) {
+            
+            int somaUnidade = carry;
+            int somaDezena = 0;
+            int somaCentena = 0;
+
+            // Definir numdIGitos do nó resultado com base nos nós do amior big int
+            int numDigitosRes = 0;
+            if (maxTamanho == tamanhoA && currentA != NULL) {
+                numDigitosRes = currentA->numDigitos;
+            } else if (maxTamanho == tamanhoB && currentB != NULL) {
+                numDigitosRes = currentB->numDigitos;
+            }
+
+            // Somar unidade
+            if (currentA != NULL) { // se ainda há dígitos em A
+                somaUnidade += (currentA->unidade - '0');
+            }
+            if (currentB != NULL) { // se ainda há dígitos em B
+                somaUnidade += (currentB->unidade - '0');
+            }
+            if (somaUnidade >= 10) { // verificar carry
+                carry = 1;
+                somaUnidade -= 10;
+            } else {
+                carry = 0;
+            }
+
+            // Somar dezena
+            if (currentA != NULL) {
+                somaDezena += (currentA->dezena - '0');
+            }
+            if (currentB != NULL) {
+                somaDezena += (currentB->dezena - '0');
+            }
+            somaDezena += carry; // adicionar carry da unidade
+            if (somaDezena >= 10) { // verificar carry
+                carry = 1;
+                somaDezena -= 10;
+            } else {
+                carry = 0;
+            }
+
+            // Somar centena
+            if (currentA != NULL) {
+                somaCentena += (currentA->centena - '0');
+            }
+            if (currentB != NULL) {
+                somaCentena += (currentB->centena - '0');
+            }
+            somaCentena += carry; // adicionar carry da dezena
+            if (somaCentena >= 10) { // verificar carry
+                carry = 1;
+                somaCentena -= 10;
+            } else {
+                carry = 0;
+            }
+
+            // Definir numDigitosRes com base nos valores calculados
+            if (somaCentena > 0) {
+                numDigitosRes = 3;
+            } else if (somaDezena > 0) {
+                numDigitosRes = 2;
+            } else {
+                numDigitosRes = 1;
+            }
+
+            // Criar novo nó com o resultado da soma
+            char unidadeRes = (char)(somaUnidade + '0');
+            char dezenaRes = (char)(somaDezena + '0');
+            char centenaRes = (char)(somaCentena + '0');
+
+            if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, numDigitosRes) == -1) {
+                freeBigInt(resultado);
+                return NULL; // Falha na inserção do nó
+            }
+
+
+            if (currentA != NULL) {
+                currentA = currentA->next;
+            }
+            if (currentB != NULL) {
+                currentB = currentB->next;
+            }
+            i += 1;
+        }
 
     } else {
         // sinais diferentes: subtrair o menor do maior e definir o sinal do maior
@@ -553,9 +662,10 @@ void printBigInt(const BigInt* bigInt) {
 
 // testar funções 
 int main() {
-    BigInt* bigInt1 = createBigInt("-000000123456789");
+    BigInt* bigInt1 = createBigInt("-1");
     BigInt* bigInt2 = createBigInt("00098765432100000000000000");
     BigInt* bigInt3 = createBigInt("-123456789");
+    BigInt* bigIntSum = addBigInt(bigInt1, bigInt3);
 
     printf("BigInt 1: ");
     printBigInt(bigInt1);
@@ -573,10 +683,15 @@ int main() {
     int eq = isEqualTo(bigInt1, bigInt3);
     printf("bigInt1 == bigInt3? %s\n", eq == 1 ? "Sim" : (eq == 0 ? "Nao" : "Erro"));
 
+    printf("Soma BigInt1 + BigInt3: ");
+    printBigInt(bigIntSum);
+    printf("\n");
+
     // Liberar memória
     freeBigInt(bigInt1);
     freeBigInt(bigInt2);
     freeBigInt(bigInt3);
+    freeBigInt(bigIntSum);
 
     return 0;
 }
