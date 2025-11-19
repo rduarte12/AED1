@@ -608,14 +608,96 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
     1- Verificar se os dois bigInts são nulos.
     2- Verificar os sinais dos dois bigInts.
     3- Verificar o tamanho dos dois bigInts.
-    4- Se os sinais forem diferentes, somar os dois bigInts e manter o sinal do minuendo.
+    4- Se os sinais forem diferentes, somar os dois bigInts e manter o sinal do maior em módulo (desconsiderando o sinal)
     5- Se os sinais forem iguais, subtrair o menor do maior e definir o sinal do maior.
+            - verificar o tamanho dos dois BigInts para definir o loop
+        - Definir o sinal do BigInt resultante.
+        a) verificar qual é maior em módulo (desconsiderando o sinal) e definjir o sinal desse como sinal do resultado
+        b) Criar BigInt resultante.
+        c) Acessar primeiro nó de cada BigInt (menos significativo).
+        d) Para cada número, verificar se o minuendo é maior que o subtraendo.
+            - Se sim, subtrair normalmente.
+            - Se não, emprestar 1 do próximo dígito mais significativo.
+        e) Criar um novo nó com o resultado da subtração e inserir no BigInt resultante.
+        f) Repetir até que todos os nós tenham sido processados.
     6- Retornar o BigInt resultante.
 
     Importante: Levar em consideração o carry
 */
+
+// Função auxiliar para subtração quando 'maior' > 'menor' 
+BigInt*subtract_aux(const BigInt* maior, const BigInt* menor) {
+    BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
+    if(!resultado) return NULL;
+    resultado->start = NULL;
+    resultado->end = NULL;
+    resultado->size = 0;
+    resultado->sinal = maior->sinal;
+
+    Node* currentMaior = maior->start;
+    Node* currentMenor = menor->start;
+    int carry = 0;
+    int maxTamanho = maior->size;
+    int i = 0;
+
+    while(i < maxTamanho) {
+        
+    }
+
+    return resultado;
+}
+
 BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
-    // Implementação futura
+    
+    if (a == NULL || b == NULL) return NULL; // Indica erro por BigInt nulo
+
+    // sinais dos BigInts
+    char sinalA = a->sinal;
+    char sinalB = b->sinal;
+
+    // tamanhos dos BigInts
+    int tamanhoA = a->size;
+    int tamanhoB = b->size;
+
+    // verificar sinais e proceder conforme o caso
+    // se iguais, subtrair o menor do maior e manter o sinal do maior
+    if (sinalA == sinalB) {
+        if (isGreaterThan(a, b) == 1) {
+            // a > b
+
+
+        } else if (isLessThan(a, b) == 1) {
+            // a < b
+
+
+        } else {
+            // a == b
+            // resultado é zero
+            BigInt* resultado = createBigInt("0");
+            return resultado;
+        }
+        
+    } else {
+        // sinais diferentes: 
+        // mudar sinal do segundo e somar e manter o sinal do maior em módulo
+        BigInt* b_invertido = (BigInt*)malloc(sizeof(BigInt));
+        if (!b_invertido) {
+            return NULL; // Falha na alocação de memória
+        }
+        b_invertido->start = b->start;
+        b_invertido->end = b->end;
+        b_invertido->size = b->size;
+        b_invertido->sinal = sinalA; // inverter sinal
+
+        BigInt* resultado = addBigInt(a, b_invertido);
+        free(b_invertido);
+
+        if (resultado == NULL) {
+            return NULL; // Falha na adição
+        }
+        return resultado;
+    }
+
     return NULL;
 }
 
@@ -685,6 +767,11 @@ int main() {
 
     printf("Soma BigInt1 + BigInt3: ");
     printBigInt(bigIntSum);
+    printf("\n");
+
+    BigInt* bigIntDiff = subtractBigInt(bigInt1, bigInt2);
+    printf("Subtracao BigInt1 - BigInt2: ");
+    printBigInt(bigIntDiff);
     printf("\n");
 
     // Liberar memória
