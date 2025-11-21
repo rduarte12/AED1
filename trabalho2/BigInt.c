@@ -665,7 +665,7 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
 
     Importante: Levar em consideração o carry
 */
-static void trimLeadingZeros(BigInt *n) {
+static void removeZeros(BigInt *n) {
     if (!n || !n->end) return;
 
     while (n->size > 1) {
@@ -723,7 +723,7 @@ static BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
         char dezenaRes  = (char)('0' + ((diff / 10) % 10));
         char centenaRes = (char)('0' + ((diff / 100) % 10));
 
-        // numDigitos temporário: será ajustado por trimLeadingZeros
+        // numDigitos temporário: será ajustado por removeZeros
         if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, 3) == -1) {
             freeBigInt(resultado);
             return NULL;
@@ -740,7 +740,7 @@ static BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
     }
 
     // remover blocos mais-significativos zero e ajustar numDigitos do MSB
-    trimLeadingZeros(resultado);
+    removeZeros(resultado);
 
     return resultado;
 }
