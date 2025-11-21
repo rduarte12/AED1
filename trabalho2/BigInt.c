@@ -4,53 +4,56 @@
 #include "BigInt.h"
 
 /*
-    Funções para manipulação de números grandes (BigInt) utilizando listas encadeadas.
+        BigInt
 
-    Tipos:
-    - BigInt: Estrutura que representa um número grande. (Armazena os dígitos em uma lista encadeada e o sinal do número).
-    - Node: Estrutura que representa um nó da lista encadeada (tres digitos com char para economizar espaço).
+        Descrição
+        - Implementa inteiros  usando blocos de 3 dígitos
+            armazenados em uma lista duplamente encadeada.
 
-    Funções Principais:
-    - BigInt* createBigInt(const char* str): Cria um BigInt a partir de uma string.
-    - void freeBigInt(BigInt* bigInt): Libera a memória alocada para um BigInt.
-    - void printBigInt(const BigInt* bigInt): Imprime o BigInt na saída padrão.
-    - BigInt* addBigInt(const BigInt* a, const BigInt* b): Soma dois BigInts e retorna o resultado.
-    - BigInt* subtractBigInt(const BigInt* a, const BigInt* b): Subtrai dois BigInts e retorna o resultado.
-    - int* isGreaterThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for maior que 'b'.
-    - int* isEqualTo(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se forem iguais.
-    - int* isLessThan(const BigInt* a, const BigInt* b): Compara dois BigInts e retorna verdadeiro se 'a' for menor que 'b'.
+        Estruturas
+        - Node
+                - campos: unidade, dezena, centena (chars '0'..'9')
+                - numDigitos: quantos dígitos são válidos (1: unidade; 2: dezena+unidade; 3: centena+dezena+unidade)
+                - ponteiros: next: proximo (direção mais significativo), prev: anterior (direção menos significativo)
 
-    Funções Auxiliares:
-    - Node* createNode(char unidade, char dezena, char centena, int numDigitos);
-    - int is_empty_BigInt(const BigInt *BigInt);
-    - int insertNode(BigInt *bigInt, char unidade, char dezena, char centena, int numDigitos);
+        - BigInt
+                - start: ponteiro para o nó menos-significativo
+                - end:   ponteiro para o nó mais-significativo
+                - size:  número de blocos (nós)
+                - sinal: '+' ou '-' — sinal único para todo o BigInt
 
-    Observações:
-         
-        Padrão de retorno para funções:
-        - Em caso de sucesso retorna o tipo da função ou 1.
-        - Em caso de falha retorna NULL para funções que retornam ponteiros ou -1.
-        - 
+        Convenções 
+        - Ordem: start é o bloco menos-significativo; end é o bloco mais-significativo.
+            Percorrendo next vai do menos-significativo ao mais-significativo; 
+            Percorrendo prev é o oposto.
+        - Blocos intermediários devem conter exatamente 3 dígitos. O bloco mais-significativo
+            pode ter numDigitos = 1..3 indicando quantos dígitos são efetivos.
+        - Sinal é armazenado apenas em BigInt->sinal.
 
-        Convenções e comportamento:
-        - Os dígitos são armazenados em blocos de 3 caracteres (chars contendo '0'..'9').
-        - A lista é ordenada do menos significativo (start) ao mais significativo (end).
-          Ou seja: inserções em createBigInt devem acrescentar blocos do menos para o mais
-          significativo; printBigInt imprime a partir de end para start.
-        - O sinal é armazenado por BigInt (campo `sinal` em BigInt).
-        - numDigitos indica quantos dígitos do bloco mais significativo são reais:
-          1, 2 ou 3. Blocos intermediários sempre devem ter 3 dígitos (zeros à esquerda
-          quando necessário).
+        Funções públicas (implementadas)
+        - BigInt* createBigInt(char* str)
+                - cria um BigInt a partir de uma string com sinal opcional
+                - normaliza zeros à esquerda
+                - retorna NULL em erro/entrada inválida
+
+        - void freeBigInt(BigInt*): libera memória
+        - void printBigInt(const BigInt*): imprime o valor do BigInt
+        - int isGreaterThan(const BigInt*, const BigInt*): compara se 'a' > 'b'
+        - int isLessThan(const BigInt*, const BigInt*): compara se 'a' < 'b'
+        - int isEqualTo(const BigInt*, const BigInt*): compara se 'a' == 'b'
+        - BigInt* addBigInt(const BigInt*, const BigInt*): soma dois BigInts
+        - BigInt* subtractBigInt(BigInt*, BigInt*): subtrai dois BigInts
+
+        Funções auxiliares 
+        - Node* createNode(char u, char d, char c, int numDigitos): cria um nó com os dígitos fornecidos
+        - int insertNode(BigInt*, char u, char d, char c, int numDigitos): insere no final (append: end->next = novo)
+        - char* removeZeros(char*): remove zeros à esquerda de uma string
+        - removeZeros_nos: remove nós desnecessários (zeros à esquerda) de um BigInt
+
 */
 
-/*
-    TODO:
-    - Implementar:
-        - addBigInt
-        - subtractBigInt
-*/
 
-// Definição das estruturas (sinal agora em BigInt)
+// Definição das estruturas 
 typedef struct Node {
     char unidade;               // Armazena um dígito (0-9)
     char dezena;                // Armazena um dígito (0-9)
@@ -63,17 +66,17 @@ typedef struct Node {
 typedef struct BigInt {
     Node* start;                // Ponteiro para o início da lista encadeada    
     Node* end;                  // Ponteiro para o final da lista encadeada
-    int size;                   // Tamanho da lista (número de blocos/nós)
+    int size;                   // Tamanho da lista (número de nós)
     char sinal;                 // Sinal do número ('+' ou '-')
 } BigInt;
 
 
 // Função para criar um nó
 /*
-    TODO:
-    1. Alocar memória para um novo nó.
-    2. Inicializar os campos do nó com os valores fornecidos.
-    3. Retornar o ponteiro para o novo nó.
+    Descrição da função:
+    - Aloca memória para um novo nó.
+    - Inicializa os campos do nó com os valores fornecidos.
+    - Retorna o ponteiro para o novo nó.
 */
 Node* createNode(char unidade, char dezena, char centena, int numDigitos) {
 
@@ -93,13 +96,13 @@ Node* createNode(char unidade, char dezena, char centena, int numDigitos) {
 
 // Função para inserir um nó no final do BigInt
 /*
-    TODO:
-    1. Criar um novo nó com os valores fornecidos.
-    2. Verificar se a criação do nó foi bem-sucedida.
-    3. Se a lista estiver vazia, definir o novo nó como início e fim.
-    4. Caso contrário, inserir o novo nó no final da lista.
-    5. Atualizar o tamanho da lista.
-    6. Retornar 1 em caso de sucesso, -1 em caso de falha.
+    Descrição da função:
+    - Cria um novo nó com os valores fornecidos.
+    - Verifica se a criação do nó foi bem-sucedida.
+    - Se a lista estiver vazia, define o novo nó como início e fim.
+    - Caso contrário, insere o novo nó no final da lista.
+    - Atualiza o tamanho da lista.
+    - Retorna 1 em caso de sucesso, -1 em caso de falha.
 */
 int insertNode(BigInt *bigInt, char unidade, char dezena, char centena, int numDigitos) {
     if (!bigInt) return -1;
@@ -125,7 +128,11 @@ int insertNode(BigInt *bigInt, char unidade, char dezena, char centena, int numD
 }
 
 // Função para liberar a memória alocada para um BigInt
-
+/*
+    Descrição da função:
+    - Libera a memória alocada para todos os nós do BigInt.
+    - Libera a memória alocada para a estrutura BigInt.
+*/
 void freeBigInt(BigInt* bigInt) {
     if (bigInt == NULL) {
         return;
@@ -144,6 +151,12 @@ void freeBigInt(BigInt* bigInt) {
 }
 
 // função para remover zeros à esquerda de uma string
+/*
+    Descrição da função:
+    - Remove zeros à esquerda de uma string que representa um número.
+    - Preserva o sinal '+' ou '-' se presente.
+    - Retorna a string sem zeros à esquerda.
+*/
 char *removeZeros(char *str) {
     if (!str) return NULL;
 
@@ -191,31 +204,33 @@ char *removeZeros(char *str) {
     return str;
 }
 
-// função recursiva que percorre a lista comparando os elementos de cada nó
-// no jeito de verificar se 'a' é maior que 'b' (ambos positivos)
-// se inverter a saída, verifico se a é menor que b
-// Observação: percorre de mais-significativo (prev) para menos-significativo
+
+/*
+    Descrição da função:
+    - Compara recursivamente os nós de dois BigInts.
+    - Retorna 1 se o primeiro BigInt for maior que o segundo, em magnitude.
+    - Retorna 0 se forem iguais em magnitude.
+    - Retorna -1 se o primeiro BigInt for menor que o segundo, em magnitude.
+*/
 int isThan_rec(const Node *a, const Node *b) {
-    if (a == NULL || b == NULL) return 0; // chamada incorreta, tratar como igual/erro
+    // Caso base: ambos nulos -> iguais
+    if (a == NULL && b == NULL) return 0; // iguais ou erro
+    // Se apenas um for nulo, o que existe é maior 
+    if (a == NULL) return -1;
+    if (b == NULL) return 1;
 
-    if (a->centena != b->centena ||
-        a->dezena != b->dezena ||
-        a->unidade != b->unidade) {
+    // Comparar bloco atual (centena, dezena, unidade) do mais-significativo para o menos
+    if (a->centena != b->centena) return (a->centena > b->centena) ? 1 : -1;
+    if (a->dezena  != b->dezena)  return (a->dezena  > b->dezena)  ? 1 : -1;
+    if (a->unidade != b->unidade) return (a->unidade > b->unidade) ? 1 : -1;
 
-        if (a->centena > b->centena) return 1;
-        if (a->centena < b->centena) return 0;
-        if (a->dezena > b->dezena) return 1;
-        if (a->dezena < b->dezena) return 0;
-        if (a->unidade > b->unidade) return 1;
-        if (a->unidade < b->unidade) return 0;
-    }
-
+    // Blocos iguais -> comparar o próximo bloco mais-significativo
     return isThan_rec(a->prev, b->prev);
 }
 
 // Função para criar um BigInt a partir de uma string
 /*
-    TODO:
+    Descrição da função:
     1- Verificar se a string é nula ou vazia.
     2- Ignorar zeros à esquerda.
     3- Verificar o tamanho da string e quantidade de dígitos.
@@ -316,7 +331,7 @@ BigInt* createBigInt(char* str1) {
 
 // Função is greater than
 /*
-    TODO:
+    Descrição da função:
     1- Verificar se os dois bigInts são nulos.
     2- Verificar os sinais dos dois bigInts.
         a) Se diferetentes, o positivo é maior.
@@ -338,28 +353,30 @@ int isGreaterThan(const BigInt* a, const BigInt* b) {
     char sinalA = a->sinal;
     char sinalB = b->sinal;
 
+    // Sinais diferentes
     if (sinalA != sinalB) {
         return (sinalA == '+') ? 1 : 0; // '+' é maior que '-'
-    }
+    } else {
 
-    // mesmos sinais
-    if (a->size != b->size) {
-        if (sinalA == '+') {
-            return (a->size > b->size) ? 1 : 0;
-        } else {
-            return (a->size < b->size) ? 1 : 0;
+        // mesmos sinais
+        // tamanhos diferentes
+        if (a->size != b->size) {
+
+            if (sinalA == '+') {
+                return (a->size > b->size) ? 1 : 0; // para positivos, maior tamanho é maior
+            } else {
+                return (a->size < b->size) ? 1 : 0; // para negativos, menor tamanho é maior
+            }
         }
+
+        // tamanhos iguais
+        Node *currentA = a->end;
+        Node *currentB = b->end;
+        if (currentA == NULL || currentB == NULL) return -1; // erro: nó nulo
+        int res = isThan_rec(currentA, currentB);
+        if (sinalA == '+') return res; // para positivos, resultado direto
+        return res ? 0 : 1; // se a > b então não é maior para negativos
     }
-
-    // mesmo tamanho: comparar blocos do mais significativo (end) para o menos (start)
-    Node *currentA = a->end;
-    Node *currentB = b->end;
-
-    if (currentA == NULL || currentB == NULL) return -1;
-
-    int res = isThan_rec(currentA, currentB);
-    if (sinalA == '+') return res;
-    return res ? 0 : 1; // inverte para negativos
 }
 
 // Função is less than
@@ -373,7 +390,10 @@ int isGreaterThan(const BigInt* a, const BigInt* b) {
         a) Se diferentes, o menor tamanho é menor.
         b) Se iguais, comparar dígito a dígito do mais significativo para o menos significativo.
     
-    4- Retornar verdadeiro se 'a' for menor que 'b', falso caso contrário.
+    Retorno:
+     - 1 se 'a' for menor que 'b'
+     - 0 se 'a' não for menor que 'b'
+     - -1 em caso de erro (BigInt nulo)
 */
 int isLessThan(const BigInt* a, const BigInt* b) {
     if (a == NULL || b == NULL) return -1; // Indica erro por BigInt nulo
@@ -385,27 +405,32 @@ int isLessThan(const BigInt* a, const BigInt* b) {
         return (sinalA == '-') ? 1 : 0; // '-' é menor que '+'
     }
 
-    // mesmos sinais
+    // sinais diferentes
     if (a->size != b->size) {
         if (sinalA == '+') {
-            return (a->size < b->size) ? 1 : 0;
+            return (a->size < b->size) ? 1 : 0; // para positivos, menor tamanho é menor
         } else {
-            return (a->size > b->size) ? 1 : 0;
+            return (a->size > b->size) ? 1 : 0; // para negativos, maior tamanho é menor
+        }
+
+    } else { // mesmos sinais
+
+        Node *currentA = a->end;
+        Node *currentB = b->end;
+        if (currentA == NULL || currentB == NULL) return -1; // erro: nó nulo
+        int res = isThan_rec(currentA, currentB);
+        if (sinalA == '+') { // para positivos, se a < b
+            return (res == -1) ? 1 : 0;
+        } else {
+            return (res == 1) ? 1 : 0; // para negativos, se a > b então a < b
         }
     }
 
-    Node *currentA = a->end;
-    Node *currentB = b->end;
-    if (currentA == NULL || currentB == NULL) return -1;
-
-    int res = isThan_rec(currentA, currentB);
-    if (sinalA == '+') return res ? 0 : 1; // se a> b então não é menor
-    return res; // para negativos, resultado direto
 }
 
 // Função is equal to
 /*
-    TODO:
+    Descrição da função:
     1- Verificar se os dois bigInts são nulos.
     2- Verificar os sinais dos dois bigInts.
         a) Se diferentes, retornar falso.
@@ -414,7 +439,10 @@ int isLessThan(const BigInt* a, const BigInt* b) {
         a) Se diferentes, retornar falso.
         b) Se iguais, comparar dígito a dígito do mais significativo para o menos significativo.
 
-    4- Retornar verdadeiro se 'a' for igual a 'b', falso caso contrário.
+    Retorno:
+     - 1 se 'a' for igual a 'b'
+     - 0 se 'a' não for igual a 'b'
+     - -1 em caso de erro (BigInt nulo)
 */
 int isEqualTo(const BigInt* a, const BigInt* b) {
     if (a == NULL || b == NULL) return -1; // Indica erro por BigInt nulo
@@ -430,44 +458,32 @@ int isEqualTo(const BigInt* a, const BigInt* b) {
     Node *currentA = a->end;
     Node *currentB = b->end;
 
-    while (currentA != NULL && currentB != NULL) {
-        if (currentA->centena != currentB->centena ||
-            currentA->dezena != currentB->dezena ||
-            currentA->unidade != currentB->unidade) {
-            return 0; // dígitos diferentes, não são iguais
-        }
-        currentA = currentA->prev;
-        currentB = currentB->prev;
-    }
+    int res = isThan_rec(currentA, currentB); //isThan_rec retorna 0 se iguais
 
-    return 1;
+    return (res == 0) ? 1 : 0;
 }
 
 // Prototipos das funções de adição e subtração
-BigInt* addBigInt(const BigInt* a, const BigInt* b);
-BigInt* subtractBigInt(const BigInt* a, const BigInt* b);
+BigInt* addBigInt(BigInt* a,BigInt* b);
+BigInt* subtractBigInt(BigInt* a, BigInt* b);
 
 // Função para somar big ints
 /*
-    TODO: 
-    1- Verificar se os dois bigInts são nulos.
-    2- Verificar os sinais dos dois bigInts.
-    3- Verificar o tamanho dos dois bigInts.
-    4- Se os sinais forem iguais, somar os dois bigInts e manter o sinal.
-        - verificar o tamanho dos dois BigInts para definir o loop
-        - Definir o sinal do BigInt resultante.
-        a) Acessar primeiro nó de cada BigInt (menos significativo).
-        b) Somar os dígitos correspondentes, levando em consideração o carry.
-            carry = {se soma >= 10, carry = 1 e soma -= 10; senão carry = 0}
-        c) Criar um novo nó com o resultado da soma e inserir no BigInt resultante.
-        d) Repetir até que todos os nós tenham sido processados.
-        e) Se houver carry restante, criar um novo nó para ele.
-    5- Se os sinais forem diferentes, subtrair o menor do maior e definir o sinal do maior.
-    6- Retornar o BigInt resultante.
+    Descrição:
+    - Soma dois BigInts e retorna um novo BigInt (não modifica os operandos).
+    - Opera por blocos de 3 dígitos, percorrendo do menos-significativo (start) ao mais-significativo (end).
+    - Trata carry entre blocos corretamente e cria um nó adicional se necessário.
+    - Se os sinais forem iguais: soma as magnitudes e mantém o sinal comum.
+    - Se os sinais forem diferentes: realiza a subtração do menor em módulo pelo maior em módulo
+      e aplica o sinal do operando de maior magnitude.
+    - Em caso de entrada inválida (NULL) retorna NULL.
 
-    Importante: Levar em consideração o carry 
+    Detalhes de implementação esperados:
+    - Iterar até o máximo de blocos entre os operandos.
+    - Para cada nó, converter dígitos para valor inteiro e realizar a soma casa a casa incluindo o carry,
+    - Retornar o BigInt alocado com sinal correto ou NULL em erro.
 */
-BigInt* addBigInt(const BigInt* a, const BigInt* b) {
+BigInt* addBigInt(BigInt* a, BigInt* b) {
     if (a == NULL || b == NULL) return NULL; // Indica erro por BigInt nulo
     
     // sinais dos BigInts
@@ -643,42 +659,29 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
     return NULL;
 }
 
-// Função para subtrair big ints
-/*
-    TODO:
-    1- Verificar se os dois bigInts são nulos.
-    2- Verificar os sinais dos dois bigInts.
-    3- Verificar o tamanho dos dois bigInts.
-    4- Se os sinais forem diferentes, somar os dois bigInts e manter o sinal do maior em módulo (desconsiderando o sinal)
-    5- Se os sinais forem iguais, subtrair o menor do maior e definir o sinal do maior.
-            - verificar o tamanho dos dois BigInts para definir o loop
-        - Definir o sinal do BigInt resultante.
-        a) verificar qual é maior em módulo (desconsiderando o sinal) e definjir o sinal do resultado
-        b) Criar BigInt resultante.
-        c) Acessar primeiro nó de cada BigInt (menos significativo).
-        d) Para cada número, verificar se o minuendo é maior que o subtraendo.
-            - Se sim, subtrair normalmente.
-            - Se não, emprestar 1 do próximo dígito mais significativo.
-        e) Criar um novo nó com o resultado da subtração e inserir no BigInt resultante.
-        f) Repetir até que todos os nós tenham sido processados.
-    6- Retornar o BigInt resultante.
+// Funções para subtrair big ints
 
-    Importante: Levar em consideração o carry
+// Função para remover nós desnecessários (zeros à esquerda) de um BigInt (utilizado na subtração)
+/*
+    Descrição da função:
+    - Remove nós mais-significativos que representam zeros (centena, dezena, unidade = '0').
+    - Ajusta o campo numDigitos do nó mais-significativo restante.
 */
-static void removeZeros(BigInt *n) {
+void removeZeros_nos(BigInt *n) {
     if (!n || !n->end) return;
 
+    // ms = nó mais significativo
     while (n->size > 1) {
         Node *ms = n->end;
         if (ms->centena == '0' && ms->dezena == '0' && ms->unidade == '0') {
-            n->end = ms->prev;
+            n->end = ms->prev;// atualizar end para o nó anterior
             if (n->end) n->end->next = NULL;
             free(ms);
             n->size--;
         } else break;
     }
 
-    // ajustar numDigitos do MSB
+    // ajustar numDigitos do nó mais-significativo restante
     if (n->end) {
         Node *ms = n->end;
         if (ms->centena != '0') ms->numDigitos = 3;
@@ -688,43 +691,47 @@ static void removeZeros(BigInt *n) {
 }
 
 // Subtrai |menor| de |maior| por blocos (0..999). Retorna BigInt novo. -> Tranforma os chars em um inteiro, subtrai, trata borrow, cria novo nó
-static BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
-    if (!maior) return NULL;
+// Função auxiliar para subtração
+BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
+    if (!maior) return NULL; // maior não pode ser nulo
 
+    // criar BigInt resultado
     BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
     if(!resultado) return NULL;
     resultado->start = resultado->end = NULL;
     resultado->size = 0;
     resultado->sinal = maior->sinal;
 
+    // percorrer os nós de ambos os BigInts
     Node* a = maior->start; // start = menos significativo
-    Node* b = (menor != NULL) ? menor->start : NULL;
-    int borrow = 0;
+    Node* b = (menor != NULL) ? menor->start : NULL; // pode ser nulo
+    int borrow = 0; // inicializar borrow
 
+    // loop até o final de ambos os BigInts                                                             
     while (a != NULL || b != NULL) {
-        int valA = 0, valB = 0;
+        int valA = 0, valB = 0; // valores inteiros dos blocos
 
         if (a != NULL) {
-            valA = (a->centena - '0') * 100 + (a->dezena - '0') * 10 + (a->unidade - '0');
+            valA = (a->centena - '0') * 100 + (a->dezena - '0') * 10 + (a->unidade - '0'); // converter todos os dígitos em um único inteiro
         }
         if (b != NULL) {
-            valB = (b->centena - '0') * 100 + (b->dezena - '0') * 10 + (b->unidade - '0');
+            valB = (b->centena - '0') * 100 + (b->dezena - '0') * 10 + (b->unidade - '0'); // converter todos os dígitos em um único inteiro
         }
 
-        int diff = valA - valB - borrow;
-        if (diff < 0) {
+        int diff = valA - valB - borrow; // calcular a diferença considerando o borrow
+        if (diff < 0) { // se negativo, ajustar com borrow
             diff += 1000;
             borrow = 1;
         } else {
             borrow = 0;
         }
 
-        char unidadeRes = (char)('0' + (diff % 10));
-        char dezenaRes  = (char)('0' + ((diff / 10) % 10));
-        char centenaRes = (char)('0' + ((diff / 100) % 10));
+        char unidadeRes = (char)('0' + (diff % 10)); // obter dígito da unidade
+        char dezenaRes  = (char)('0' + ((diff / 10) % 10)); // obter dígito da dezena
+        char centenaRes = (char)('0' + ((diff / 100) % 10)); // obter dígito da centena
 
         // numDigitos temporário: será ajustado por removeZeros
-        if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, 3) == -1) {
+        if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, 3) == -1) {    // inserir nó no resultado
             freeBigInt(resultado);
             return NULL;
         }
@@ -740,12 +747,23 @@ static BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
     }
 
     // remover blocos mais-significativos zero e ajustar numDigitos do MSB
-    removeZeros(resultado);
+    removeZeros_nos(resultado);
 
     return resultado;
 }
 
-BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
+// Função principal de subtração
+/*
+    Descrição:
+    - Subtrai dois BigInts e retorna um novo BigInt (não modifica os operandos).
+    - Trata os sinais dos operandos para determinar a operação correta:
+        a) Se os sinais forem diferentes, converte a subtração em uma soma.
+        b) Se os sinais forem iguais, realiza a subtração do menor em módulo pelo maior em módulo.
+    - Utiliza a função auxiliar 'subtract_aux' para realizar a subtração por blocos.
+    - Retorna o BigInt resultante com o sinal correto ou NULL em caso de erro.
+
+*/
+BigInt* subtractBigInt(BigInt* a, BigInt* b) {
     if (a == NULL || b == NULL) return NULL;
 
     char sinalA = a->sinal;
@@ -757,67 +775,38 @@ BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
         BigInt *b_invertido = (BigInt*)malloc(sizeof(BigInt));
         if (!b_invertido) return NULL;
         *b_invertido = *b;
-        b_invertido->sinal = sinalA; // inverter sinal para somar com mesmo sinal de a
+        b_invertido->sinal = sinalA; // inverter sinal para somar com mesmo sinal de a // função de adição trata os sinais
         BigInt *result = addBigInt(a, b_invertido);
         free(b_invertido);
         return result;
     }
 
-    // mesmos sinais: comparar magnitude (sem sinal)
-    int cmp;
-    if (a->size != b->size) cmp = (a->size > b->size) ? 1 : -1;
-    else {
-        Node *na = a->end;
-        Node *nb = b->end;
-        cmp = 0;
-        while (na && nb) {
-            if (na->centena != nb->centena) { cmp = (na->centena > nb->centena) ? 1 : -1; break; }
-            if (na->dezena  != nb->dezena)  { cmp = (na->dezena  > nb->dezena)  ? 1 : -1; break; }
-            if (na->unidade != nb->unidade) { cmp = (na->unidade > nb->unidade) ? 1 : -1; break; }
-            na = na->prev; nb = nb->prev;
-        }
-        if (na == NULL && nb == NULL && cmp == 0) cmp = 0;
-    }
-
-    if (cmp == 0) {
-        // iguais => zero
-        BigInt* z = (BigInt*)malloc(sizeof(BigInt));
-        if (!z) return NULL;
-        z->start = z->end = NULL;
-        z->size = 0;
-        z->sinal = '+';
-        if (insertNode(z, '0', '0', '0', 1) == -1) { freeBigInt(z); return NULL; }
-        return z;
-    }
-
+    // mesmos sinais: se positivos, se b > a então resultado negativo, caso contrário positivo
+    // mesmos sinais: se negativos soma e mantem sinal negativo
     if (sinalA == '+') {
-        if (cmp > 0) {
-            return subtract_aux(a, b); // a > b -> positive result
+        if (isGreaterThan(a, b) == 1) {
+                return subtract_aux(a, b);
         } else {
-            BigInt* res = subtract_aux(b, a); // b > a -> positive magnitude, invert sign
-            if (res) res->sinal = '-';
+            BigInt *res = subtract_aux(b, a);
+            if (res) {
+                    res->sinal = (sinalA == '+') ? '-' : '+'; // inverter sinal
+            }
             return res;
         }
-    } else { // ambos negativos: a - b = (-|a|) - (-|b|) = -( |a| - |b| ) => sign depende de magnitude
-        if (cmp > 0) { // |a| > |b|
-            BigInt* res = subtract_aux(a, b);
-            if (res) res->sinal = '-';
-            return res;
-        } else {
-            BigInt* res = subtract_aux(b, a);
-            // res stays positive (since result = -(|b|-|a|) and sign = +? double check)
-            // For: a=-5, b=-3 => (-5)-(-3) = -2 -> |a|>|b| => we took subtract_aux(a,b) and set '-' above
-            // For |b|>|a| we want positive: (-3)-(-5)=2 -> res should be '+'
-            return res;
-        }
+    } else {
+        BigInt *res = addBigInt(a, b);
+        return res;
     }
+    return NULL; // caso não previsto
+
 }
 
 // Função para imprimir 
 /*
-    Imprime o BigInt na saída padrão.
-    Formato: [sinal][dígitos]
-    Exemplo: -123456789
+    Descrição da função:
+    - Imprime o valor do BigInt na saída padrão.
+    - Imprime o sinal se negativo (evita imprimir -0).
+    - Imprime os dígitos do BigInt do mais-significativo para o menos-significativo.
 */
 
 void printBigInt(const BigInt* bigInt) {
@@ -826,7 +815,7 @@ void printBigInt(const BigInt* bigInt) {
         return;
     }
 
-    // imprimir sinal (evitar "-0")
+    // imprimir sinal se negativo e não for zero evitar imprimir -0
     if (bigInt->sinal == '-') {
         if (!(bigInt->start == bigInt->end && bigInt->start->numDigitos == 1 && bigInt->start->unidade == '0')) {
             printf("-");
@@ -852,28 +841,4 @@ void printBigInt(const BigInt* bigInt) {
         printf("%c%c%c", current->centena, current->dezena, current->unidade);
         current = current->prev;
     }
-}
-
-
-// testar funções 
-int main() {
-
-    printf("==== Starting tests ====\n\n");
-
-    BigInt *a = createBigInt("-1000");
-    BigInt *b = createBigInt("999");
-    BigInt *r = addBigInt(a, b);
-    printBigInt(a);
-    printf("\n");
-    printBigInt(b);
-    printf("\n");
-    printBigInt(r);
-    printf("\n\n");
-    freeBigInt(a);
-    freeBigInt(b);
-    freeBigInt(r);
-
-    printf("==== End of tests ====\n");
-
-    return 0;
 }
