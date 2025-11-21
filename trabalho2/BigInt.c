@@ -30,7 +30,7 @@
             pode ter numDigitos = 1..3 indicando quantos dígitos são efetivos.
         - Sinal é armazenado apenas em BigInt->sinal.
 
-        Funções públicas (implementadas)
+        Funções públicas 
         - BigInt* createBigInt(char* str)
                 - cria um BigInt a partir de uma string com sinal opcional
                 - normaliza zeros à esquerda
