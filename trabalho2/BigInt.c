@@ -246,12 +246,11 @@ BigInt* createBigInt(char* str1) {
     // verificar o tamanho da string e quantidade de dígitos
     int len = strlen(buf);
     
-    if (buf[0] == '-' && len == 1) {
-        free(buf);
-        return NULL; // String inválida
-    }
-
     int hasSign = (buf[0] == '-' || buf[0] == '+') ? 1 : 0; // Verifica se há sinal
+    if (hasSign && len == 1) { // entrada apenas com sinal é inválida
+        free(buf);
+        return NULL;
+    }
     int digits = len - (hasSign ? 1 : 0);
 
     // Alocar memória para o BigInt
@@ -444,6 +443,10 @@ int isEqualTo(const BigInt* a, const BigInt* b) {
     return 1;
 }
 
+// Prototipos das funções de adição e subtração
+BigInt* addBigInt(const BigInt* a, const BigInt* b);
+BigInt* subtractBigInt(const BigInt* a, const BigInt* b);
+
 // Função para somar big ints
 /*
     TODO: 
@@ -474,19 +477,18 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
     // tamanhos dos BigInts
     int tamanhoA = a->size;
     int tamanhoB = b->size;
-
-    // criar BigInt resultado
-    BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
-    if (!resultado) {
-        return NULL; // Falha na alocação de memória
-    }
-    resultado->start = NULL;
-    resultado->end = NULL;
-    resultado->size = 0;
-    resultado->sinal = '+'; // valor temporário
     
     // se sinais iguais, somar e manter o sinal do maior
     if (sinalA == sinalB) {
+            // criar BigInt resultado
+            BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
+            if (!resultado) {
+                return NULL; // Falha na alocação de memória
+            }
+            resultado->start = NULL;
+            resultado->end = NULL;
+            resultado->size = 0;
+            resultado->sinal = '+'; // valor temporário
         
         // - verificar tamanohos para definir loop (até qual digito vai somar + carry)
         int maxTamanho = (tamanhoA > tamanhoB) ? tamanhoA : tamanhoB;
@@ -509,24 +511,21 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
         int i = 0;
         while (i < maxTamanho) {
             
-            int somaUnidade = carry;
-            int somaDezena = 0;
-            int somaCentena = 0;
-
-            // Definir numdIGitos do nó resultado com base nos nós do amior big int
+            carry = carry; // carry da iteração anterior
+            int somaUnidade = -1; // inicializar com -1 para indicar que não foi somado ainda (flag)
+            int somaDezena = -1;
+            int somaCentena = -1;
             int numDigitosRes = 0;
-            if (maxTamanho == tamanhoA && currentA != NULL) {
-                numDigitosRes = currentA->numDigitos;
-            } else if (maxTamanho == tamanhoB && currentB != NULL) {
-                numDigitosRes = currentB->numDigitos;
-            }
-
             // Somar unidade
             if (currentA != NULL) { // se ainda há dígitos em A
                 somaUnidade += (currentA->unidade - '0');
             }
             if (currentB != NULL) { // se ainda há dígitos em B
                 somaUnidade += (currentB->unidade - '0');
+            }
+            somaUnidade += carry; // adicionar carry da iteração anterior
+            if (somaUnidade != -1) { // indica se houve soma
+                somaUnidade++; // ajustar valor inicial que era -1: somar 1 para compensar
             }
             if (somaUnidade >= 10) { // verificar carry
                 carry = 1;
@@ -543,6 +542,9 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
                 somaDezena += (currentB->dezena - '0');
             }
             somaDezena += carry; // adicionar carry da unidade
+            if (somaDezena != -1) { // indica se houve soma
+                somaDezena++; // ajustar valor inicial que era -1: somar 1 para compensar
+            }
             if (somaDezena >= 10) { // verificar carry
                 carry = 1;
                 somaDezena -= 10;
@@ -558,6 +560,9 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
                 somaCentena += (currentB->centena - '0');
             }
             somaCentena += carry; // adicionar carry da dezena
+            if (somaCentena != -1) { // indica se houve soma
+                somaCentena++; // ajustar valor inicial que era -1: somar 1 para compensar
+            }
             if (somaCentena >= 10) { // verificar carry
                 carry = 1;
                 somaCentena -= 10;
@@ -565,20 +570,17 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
                 carry = 0;
             }
 
-            // Definir numDigitosRes com base nos valores calculados
-            if (somaCentena > 0) {
-                numDigitosRes = 3;
-            } else if (somaDezena > 0) {
-                numDigitosRes = 2;
-            } else {
-                numDigitosRes = 1;
-            }
+            // Definir numDigitosRes com base nos valores que foram modificados, ou seja, diferentes de -1
+            if (somaCentena != -1) numDigitosRes++;
+            if (somaDezena != -1) numDigitosRes++;
+            if (somaUnidade != -1) numDigitosRes++;
 
             // Criar novo nó com o resultado da soma
             char unidadeRes = (char)(somaUnidade + '0');
             char dezenaRes = (char)(somaDezena + '0');
             char centenaRes = (char)(somaCentena + '0');
 
+            // Inserir o nó no BigInt resultado
             if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, numDigitosRes) == -1) {
                 freeBigInt(resultado);
                 return NULL; // Falha na inserção do nó
@@ -594,12 +596,51 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
             i += 1;
         }
 
+        // Se houver carry restante, criar um novo nó para ele
+                    // adicionar nó para carry restante após o loop, se houver
+            if (carry > 0) {
+                char unidadeRes = (char)(carry + '0');
+                if (insertNode(resultado, unidadeRes, '0', '0', 1) == -1) {
+                    freeBigInt(resultado);
+                    return NULL; // Falha na inserção do nó
+                }
+            }
+
+        return resultado;
+
     } else {
-        // sinais diferentes: subtrair o menor do maior e definir o sinal do maior
-        // Implementação futura
+        // sinais diferentes: subtrair o menor do maior e definir o sinal do menor
+        BigInt* subtracao = NULL;
+        if (isGreaterThan(a, b) == 1) {
+
+            BigInt *b_inv = (BigInt*)malloc(sizeof(BigInt));
+            if (!b_inv) return NULL;
+            b_inv->start = b->start;
+            b_inv->end = b->end;
+            b_inv->size = b->size;
+            b_inv->sinal = (b->sinal == '+') ? '-' : '+';
+            subtracao = subtractBigInt(a, b_inv);
+            free(b_inv);
+
+        } else {
+
+            BigInt* a_inv = (BigInt*)malloc(sizeof(BigInt));
+            if (!a_inv) return NULL;
+            a_inv->start = a->start;
+            a_inv->end = a->end;
+            a_inv->size = a->size;
+            a_inv->sinal = (a->sinal == '+') ? '-' : '+';
+            subtracao = subtractBigInt(a_inv, b);
+            subtracao->sinal = (b->sinal == '+') ? '-' : '+';
+            free(a_inv);
+        }
+
+        return subtracao;
+
+
     }
 
-    return resultado;
+    return NULL;
 }
 
 // Função para subtrair big ints
@@ -612,7 +653,7 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
     5- Se os sinais forem iguais, subtrair o menor do maior e definir o sinal do maior.
             - verificar o tamanho dos dois BigInts para definir o loop
         - Definir o sinal do BigInt resultante.
-        a) verificar qual é maior em módulo (desconsiderando o sinal) e definjir o sinal desse como sinal do resultado
+        a) verificar qual é maior em módulo (desconsiderando o sinal) e definjir o sinal do resultado
         b) Criar BigInt resultante.
         c) Acessar primeiro nó de cada BigInt (menos significativo).
         d) Para cada número, verificar se o minuendo é maior que o subtraendo.
@@ -624,100 +665,152 @@ BigInt* addBigInt(const BigInt* a, const BigInt* b) {
 
     Importante: Levar em consideração o carry
 */
+static void trimLeadingZeros(BigInt *n) {
+    if (!n || !n->end) return;
 
-// Função auxiliar para subtração quando 'maior' > 'menor' 
-BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
+    while (n->size > 1) {
+        Node *ms = n->end;
+        if (ms->centena == '0' && ms->dezena == '0' && ms->unidade == '0') {
+            n->end = ms->prev;
+            if (n->end) n->end->next = NULL;
+            free(ms);
+            n->size--;
+        } else break;
+    }
+
+    // ajustar numDigitos do MSB
+    if (n->end) {
+        Node *ms = n->end;
+        if (ms->centena != '0') ms->numDigitos = 3;
+        else if (ms->dezena != '0') ms->numDigitos = 2;
+        else ms->numDigitos = 1;
+    }
+}
+
+// Subtrai |menor| de |maior| por blocos (0..999). Retorna BigInt novo. -> Tranforma os chars em um inteiro, subtrai, trata borrow, cria novo nó
+static BigInt *subtract_aux(const BigInt* maior, const BigInt* menor) {
+    if (!maior) return NULL;
+
     BigInt* resultado = (BigInt*)malloc(sizeof(BigInt));
     if(!resultado) return NULL;
-    resultado->start = NULL;
-    resultado->end = NULL;
+    resultado->start = resultado->end = NULL;
     resultado->size = 0;
     resultado->sinal = maior->sinal;
 
-    Node* currentMaior = maior->start;
-    Node* currentMenor = menor->start;
-    int carry = 0;
-    int maxTamanho = maior->size;
-    int i = 0;
+    Node* a = maior->start; // start = menos significativo
+    Node* b = (menor != NULL) ? menor->start : NULL;
+    int borrow = 0;
 
-    while(i < maxTamanho) {
-        int subUnidade = 0;
-        int subDezena = 0;
-        int subCentena = 0;
+    while (a != NULL || b != NULL) {
+        int valA = 0, valB = 0;
 
-        // Definir numDigitos do nó resultado com base nos nós do maior big int
-        int numDigitosRes = 0;
-        if (currentMaior != NULL) {
-            numDigitosRes = currentMaior->numDigitos;
+        if (a != NULL) {
+            valA = (a->centena - '0') * 100 + (a->dezena - '0') * 10 + (a->unidade - '0');
+        }
+        if (b != NULL) {
+            valB = (b->centena - '0') * 100 + (b->dezena - '0') * 10 + (b->unidade - '0');
         }
 
-        // Subtrair unidade
+        int diff = valA - valB - borrow;
+        if (diff < 0) {
+            diff += 1000;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
 
+        char unidadeRes = (char)('0' + (diff % 10));
+        char dezenaRes  = (char)('0' + ((diff / 10) % 10));
+        char centenaRes = (char)('0' + ((diff / 100) % 10));
 
+        // numDigitos temporário: será ajustado por trimLeadingZeros
+        if (insertNode(resultado, unidadeRes, dezenaRes, centenaRes, 3) == -1) {
+            freeBigInt(resultado);
+            return NULL;
+        }
 
-
-
+        if (a) a = a->next;
+        if (b) b = b->next;
     }
+
+    // Se sobrar borrow, houve erro lógico (maior < menor) — liberar e retornar NULL
+    if (borrow) {
+        freeBigInt(resultado);
+        return NULL;
+    }
+
+    // remover blocos mais-significativos zero e ajustar numDigitos do MSB
+    trimLeadingZeros(resultado);
 
     return resultado;
 }
 
 BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
-    
-    if (a == NULL || b == NULL) return NULL; // Indica erro por BigInt nulo
+    if (a == NULL || b == NULL) return NULL;
 
-    // sinais dos BigInts
     char sinalA = a->sinal;
     char sinalB = b->sinal;
 
-    // tamanhos dos BigInts
-    int tamanhoA = a->size;
-    int tamanhoB = b->size;
-
-    // verificar sinais e proceder conforme o caso
-    // se iguais, subtrair o menor do maior e manter o sinal do maior
-    if (sinalA == sinalB) {
-        if (isGreaterThan(a, b) == 1) {
-            // a > b
-
-            BigInt* resultado = subtract_aux(a, b);
-            return resultado;
-
-        } else if (isLessThan(a, b) == 1) {
-            // a < b
-
-            BigInt* resultado = subtract_aux(b, a);
-            return resultado;
-
-        } else {
-            // a == b
-            // resultado é zero
-            BigInt* resultado = createBigInt("0");
-            return resultado;
-        }
-        
-    } else {
-        // sinais diferentes: 
-        // mudar sinal do segundo e somar e manter o sinal do maior em módulo
-        BigInt* b_invertido = (BigInt*)malloc(sizeof(BigInt));
-        if (!b_invertido) {
-            return NULL; // Falha na alocação de memória
-        }
-        b_invertido->start = b->start;
-        b_invertido->end = b->end;
-        b_invertido->size = b->size;
-        b_invertido->sinal = sinalA; // inverter sinal
-
-        BigInt* resultado = addBigInt(a, b_invertido);
+    // sinais diferentes: a - b == a + (-b)
+    if (sinalA != sinalB) {
+        // cria cópia de b com sinal invertido
+        BigInt *b_invertido = (BigInt*)malloc(sizeof(BigInt));
+        if (!b_invertido) return NULL;
+        *b_invertido = *b;
+        b_invertido->sinal = sinalA; // inverter sinal para somar com mesmo sinal de a
+        BigInt *result = addBigInt(a, b_invertido);
         free(b_invertido);
-
-        if (resultado == NULL) {
-            return NULL; // Falha na adição
-        }
-        return resultado;
+        return result;
     }
 
-    return NULL;
+    // mesmos sinais: comparar magnitude (sem sinal)
+    int cmp;
+    if (a->size != b->size) cmp = (a->size > b->size) ? 1 : -1;
+    else {
+        Node *na = a->end;
+        Node *nb = b->end;
+        cmp = 0;
+        while (na && nb) {
+            if (na->centena != nb->centena) { cmp = (na->centena > nb->centena) ? 1 : -1; break; }
+            if (na->dezena  != nb->dezena)  { cmp = (na->dezena  > nb->dezena)  ? 1 : -1; break; }
+            if (na->unidade != nb->unidade) { cmp = (na->unidade > nb->unidade) ? 1 : -1; break; }
+            na = na->prev; nb = nb->prev;
+        }
+        if (na == NULL && nb == NULL && cmp == 0) cmp = 0;
+    }
+
+    if (cmp == 0) {
+        // iguais => zero
+        BigInt* z = (BigInt*)malloc(sizeof(BigInt));
+        if (!z) return NULL;
+        z->start = z->end = NULL;
+        z->size = 0;
+        z->sinal = '+';
+        if (insertNode(z, '0', '0', '0', 1) == -1) { freeBigInt(z); return NULL; }
+        return z;
+    }
+
+    if (sinalA == '+') {
+        if (cmp > 0) {
+            return subtract_aux(a, b); // a > b -> positive result
+        } else {
+            BigInt* res = subtract_aux(b, a); // b > a -> positive magnitude, invert sign
+            if (res) res->sinal = '-';
+            return res;
+        }
+    } else { // ambos negativos: a - b = (-|a|) - (-|b|) = -( |a| - |b| ) => sign depende de magnitude
+        if (cmp > 0) { // |a| > |b|
+            BigInt* res = subtract_aux(a, b);
+            if (res) res->sinal = '-';
+            return res;
+        } else {
+            BigInt* res = subtract_aux(b, a);
+            // res stays positive (since result = -(|b|-|a|) and sign = +? double check)
+            // For: a=-5, b=-3 => (-5)-(-3) = -2 -> |a|>|b| => we took subtract_aux(a,b) and set '-' above
+            // For |b|>|a| we want positive: (-3)-(-5)=2 -> res should be '+'
+            return res;
+        }
+    }
 }
 
 // Função para imprimir 
@@ -726,6 +819,7 @@ BigInt* subtractBigInt(const BigInt* a, const BigInt* b) {
     Formato: [sinal][dígitos]
     Exemplo: -123456789
 */
+
 void printBigInt(const BigInt* bigInt) {
     if (bigInt == NULL || bigInt->start == NULL) {
         printf("BigInt nulo\n");
@@ -763,50 +857,23 @@ void printBigInt(const BigInt* bigInt) {
 
 // testar funções 
 int main() {
-    BigInt* bigInt1 = createBigInt("-1");
-    BigInt* bigInt2 = createBigInt("00098765432100000000000000");
-    BigInt* bigInt3 = createBigInt("-123456789");
-    BigInt* bigIntSum = addBigInt(bigInt1, bigInt3);
 
-    printf("BigInt 1: ");
-    printBigInt(bigInt1);
+    printf("==== Starting tests ====\n\n");
+
+    BigInt *a = createBigInt("-1000");
+    BigInt *b = createBigInt("999");
+    BigInt *r = addBigInt(a, b);
+    printBigInt(a);
     printf("\n");
-
-    printf("BigInt 2: ");
-    printBigInt(bigInt2);
+    printBigInt(b);
     printf("\n");
+    printBigInt(r);
+    printf("\n\n");
+    freeBigInt(a);
+    freeBigInt(b);
+    freeBigInt(r);
 
-    printf("Comparacao:\n");
-    int gt = isGreaterThan(bigInt1, bigInt2);
-    printf("bigInt1 > bigInt2? %s\n", gt == 1 ? "Sim" : (gt == 0 ? "Nao" : "Erro"));
-    int lt = isLessThan(bigInt1, bigInt2);
-    printf("bigInt1 < bigInt2? %s\n", lt == 1 ? "Sim" : (lt == 0 ? "Nao" : "Erro"));
-    int eq = isEqualTo(bigInt1, bigInt3);
-    printf("bigInt1 == bigInt3? %s\n", eq == 1 ? "Sim" : (eq == 0 ? "Nao" : "Erro"));
-
-    printf("Soma BigInt1 + BigInt3: ");
-    printBigInt(bigIntSum);
-    printf("\n");
-
-    BigInt* bigIntDiff = subtractBigInt(bigInt1, bigInt2);
-    printf("Subtracao BigInt1 - BigInt2: ");
-    printBigInt(bigIntDiff);
-    printf("\n");
-
-    // Liberar memória
-    freeBigInt(bigInt1);
-    freeBigInt(bigInt2);
-    freeBigInt(bigInt3);
-    freeBigInt(bigIntSum);
+    printf("==== End of tests ====\n");
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
